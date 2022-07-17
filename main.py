@@ -30,4 +30,4 @@ keep_alive()
 bot.load_extension('new_main_comms')
 bot.load_extension('preferencecommands')
 # bot.load_extension('error_handler')
-bot.run(os.environ['TOKEN'])
+bot.run(os.environ['TOKEN']) # Does not work in non-repl environment
