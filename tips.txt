@@ -1,0 +1,8 @@
+You can customize the name of your Private Room using **pr!cn [your preferred name here]**!
+You can grant access to users into your Private Room by using **pr!inv [username]**!
+You can send a personalized invitation to users of this server with **pr!inv [username] [message]**!
+You can kick and revoke access from users through **pr!kick [username]**!
+If I can't find the desired username, try adding the hashtag and four numbers at the end of their username (ex. Anthemic#6661)!
+You can bulk delete messages with **pr!bdel** and **pr!del**! Available only to users with Modify Messages permissions.
+You can report any bugs to the developer, Anthemic#6661!
+
