@@ -2,20 +2,19 @@ import discord
 from discord.ext import commands
 import time
 import asyncio
-import pickle
 from sqlitedict import SqliteDict
 import logging
 from classes import PrivateRoom, DeleteProcess
 from random import choice
+from logger import logger
 
 
 class MainCommands(commands.Cog):
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.room_db = SqliteDict("room_db.sqlite")
-        self.preference_db = SqliteDict("preference_db.sqlite")
-        self.delete_process_db = SqliteDict("delete_process_queue.sqlite")
+        self.room_db = SqliteDict("databases/room_db.sqlite")
+        self.preference_db = SqliteDict("databases/preference_db.sqlite")
+        self.delete_process_db = SqliteDict("databases/delete_process_queue.sqlite")
 
         tips = list()
         with open("tips.txt") as f:
@@ -114,9 +113,6 @@ class MainCommands(commands.Cog):
 
             self.room_db[new_room.owner_id] = new_room
             self.room_db.commit()
-
-            self.room_db = SqliteDict("room_db.sqlite")
-            logger.debug(f"Committed {self.room_db[new_room.owner_id]}")
 
             logger.debug(f'Private voice: {await self.get_room_channel(new_room, "voice")}')
             await member.move_to(await self.get_room_channel(new_room, "voice"))
@@ -630,16 +626,8 @@ class MainCommands(commands.Cog):
                     self.delete_process_db.commit()
 
 
-def setup(bot: commands.Bot):
-    bot.add_cog(MainCommands(bot))
+async def setup(bot):
+    await bot.add_cog(MainCommands(bot))
 
-    # Logging setup
-    global logger
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    handler = logging.FileHandler('log_file.log')
-    formatter = logging.Formatter('%(asctime)s : %(name)s  : %(funcName)s : %(levelname)s : %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
 

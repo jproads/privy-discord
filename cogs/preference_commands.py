@@ -3,7 +3,7 @@ from discord.ext import commands
 import pickle
 
 
-class Preferences(commands.Cog):
+class PreferenceCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.lobby_channel = ''
@@ -19,11 +19,11 @@ class Preferences(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         try:
-            self.preference_db = SqliteDict('preference_db.sqlite')
-            print('Loaded preference.p successfully')
+            self.preference_db = SqliteDict('databases/preference_db.sqlite')
+            print('Loaded preferences successfully')
         except:
-            self.preference_db = SqliteDict('preference_db.sqlite')
-            print('Error loading preferences.p')
+            self.preference_db = SqliteDict('databases/preference_db.sqlite')
+            print('Error loading preferences')
 
     @commands.command(name='setlobby', aliases=['sl'])
     @commands.has_permissions(manage_channels=True)
@@ -56,5 +56,5 @@ class Preferences(commands.Cog):
             await ctx.send('This server has no lobby!')
 
 
-def setup(bot: commands.Bot):
-    bot.add_cog(Preferences(bot))
+async def setup(bot):
+    await bot.add_cog(PreferenceCommands(bot))
