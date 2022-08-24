@@ -5,7 +5,7 @@ import asyncio
 import pickle
 from sqlitedict import SqliteDict
 import logging
-from main import PrivateRoom, DeleteProcess
+from classes import PrivateRoom, DeleteProcess
 from random import choice
 
 
