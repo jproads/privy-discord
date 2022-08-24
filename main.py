@@ -29,4 +29,4 @@ class MyBot(commands.Bot):
 
 
 bot = MyBot()
-bot.run('OTAxODM3NjMxNzQ1MzE4OTcy.GeAelS._OVHbV0YXbqVjOMxce6eVV61Y45kN-P_LYK5aM')
+bot.run('') # Insert TOKEN here
