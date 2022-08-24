@@ -14,6 +14,7 @@ class MainCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.room_db = SqliteDict("room_db.sqlite")
+        self.preference_db = SqliteDict("preference_db.sqlite")
         self.delete_process_db = SqliteDict("delete_process_queue.sqlite")
 
         tips = list()
@@ -64,8 +65,6 @@ class MainCommands(commands.Cog):
 
     async def create_room(self, member: discord.Member):
         # TODO: Docstring
-        # TODO: Delete once using SqliteDict
-        prefList = pickle.load(open("preferences.p", "rb"))
 
         # Checks for existing room - if yes, kicks them out of the channel and stops the function
         if member.id in self.room_db.keys():
@@ -78,7 +77,7 @@ class MainCommands(commands.Cog):
 
         # TODO: make a function get_category_from_id
         # Searches for category object from category_id
-        category_id = prefList.get(member.guild.id).get('lobby_category')
+        category_id = self.preference_db.get(member.guild.id).get('lobby_category')
         category = None
         for cat in member.guild.categories:
             if cat.id == category_id:
@@ -136,12 +135,12 @@ class MainCommands(commands.Cog):
     async def check_lobby(self, member: discord.Member, after: discord.VoiceState):
         """ Checks if member joins the lobby channel and does not have a room. """
 
-        if (after.channel.id == prefList.get(member.guild.id).get('lobby_channel')
+        if (after.channel.id == self.preference_db.get(member.guild.id).get('lobby_channel')
                 and member.id not in self.get_owner_ids()):
             logger.debug(f'{member} joined lobby channel: {after.channel}')
             await self.create_room(member)
 
-        elif (after.channel.id == prefList.get(member.guild.id).get('lobby_channel')
+        elif (after.channel.id == self.preference_db.get(member.guild.id).get('lobby_channel')
               and member.id in self.get_owner_ids()):
             await member.send(content=f"You already have a private room in some server! "
                                       f"Close it to make a new one.")
@@ -245,9 +244,6 @@ class MainCommands(commands.Cog):
 
         logger.info(f"Successfully logged in as {self.bot.user}")
 
-        # TODO: Convert to SqliteDict
-        global prefList
-        prefList = pickle.load(open("preferences.p", "rb"))
         await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="pr!help"))
         await self.check_empty_rooms_on_ready()
 
@@ -405,13 +401,11 @@ class MainCommands(commands.Cog):
             await ctx.send(embed=embed, delete_after=5)
             pass
 
-    # TODO: Update preflist
     @commands.command(name='lobby', aliases=['l'])
     async def show_lobby(self, ctx: commands.Context):
-        prefList = pickle.load(open("preferences.p", "rb"))
         flag = 0
 
-        for guild_id, prefs in prefList.items():
+        for guild_id, prefs in self.preference_db.items():
             if guild_id == ctx.guild.id:
                 lobby_channel_id = prefs.get('lobby_channel')
                 for channel in ctx.guild.channels:
@@ -647,8 +641,5 @@ def setup(bot: commands.Bot):
     formatter = logging.Formatter('%(asctime)s : %(name)s  : %(funcName)s : %(levelname)s : %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
-    global prefList
-    prefList = pickle.load(open("preferences.p", "rb"))
 
 

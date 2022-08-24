@@ -10,9 +10,8 @@ prefix = 'pr!'
 bot = commands.Bot(command_prefix=prefix, intents=intents, help_command=None)
 
 # keep_alive()
-async def main():
-    await bot.load_extension('main_commands')
-    await bot.load_extension('preference_commands')
+bot.load_extension('main_commands')
+bot.load_extension('preference_commands')
 # bot.load_extension('error_handler')
 
 
