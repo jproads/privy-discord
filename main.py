@@ -1,33 +1,32 @@
 import discord
 from discord.ext import commands
-import os
-from keep_alive import keep_alive
-
-
-class PrivateRoom:
-    def __init__(self):
-        self.guild_id = None
-        self.owner_id = None
-        self.private_voice_id = None
-        self.private_text_id = None
-        self.waiting_room_id = None
-
-
-class DeleteProcess:
-    def __init__(self):
-        self.doer_id = None
-        self.start_msg_id = None
-        self.end_msg_id = None
-
+# from keep_alive import keep_alive
 
 intents = discord.Intents.default()
 intents.members = True
+intents.message_content = True
 
 prefix = 'pr!'
-bot = commands.Bot(command_prefix=prefix, intents=intents, help_command=None)
 
-keep_alive()
-bot.load_extension('new_main_comms')
-bot.load_extension('preferencecommands')
-# bot.load_extension('error_handler')
-bot.run(os.environ['TOKEN']) # Does not work in non-repl environment
+
+class MyBot(commands.Bot):
+    def __init__(self):
+        super().__init__(intents=intents, command_prefix=prefix, help_command=None)
+        self.initial_extensions = [
+            'cogs.main_commands',
+            'cogs.preference_commands',
+        ]
+
+    async def setup_hook(self):
+        for ext in self.initial_extensions:
+            await self.load_extension(ext)
+
+    async def close(self):
+        await super().close()
+
+    async def on_ready(self):
+        print('Ready!')
+
+
+bot = MyBot()
+bot.run('') # Insert TOKEN here
