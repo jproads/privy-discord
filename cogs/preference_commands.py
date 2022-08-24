@@ -27,7 +27,7 @@ class PreferenceCommands(commands.Cog):
 
     @commands.command(name='setlobby', aliases=['sl'])
     @commands.has_permissions(manage_channels=True)
-    async def newLobby(self, ctx: commands.Context):
+    async def new_lobby(self, ctx: commands.Context):
         if ctx.author.voice:
             try:
                 self.preference_db.pop(ctx.guild.id)
@@ -46,7 +46,7 @@ class PreferenceCommands(commands.Cog):
 
     @commands.command(name='deleteLobby', aliases=['dl'])
     @commands.has_permissions(manage_channels=True)
-    async def deleteLobby(self, ctx: commands.Context):
+    async def delete_lobby(self, ctx: commands.Context):
         try:
             self.preference_db.pop(ctx.guild.id)
             await ctx.send(f"Erased this server's old lobby.")
