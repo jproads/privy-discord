@@ -4,7 +4,7 @@ import pickle
 
 
 
-class preferences(commands.Cog):
+class Preferences(commands.Cog):
   def __init__(self, bot: commands.Bot):
     self.bot = bot
     self.lobby_channel = ''
