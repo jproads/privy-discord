@@ -28,14 +28,7 @@ class MainCommands(commands.Cog):
             PRIVY_DB, tablename="delete_process_queue"
         )
 
-        tips = list()
-        with open(TIPS_DIRECTORY) as f:
-            for line in f:
-                if line.endswith("\n"):
-                    line = line[:-1]
-                tips.append(line)
-
-        self.tips = tips
+        self.tips = [line.strip() for line in open(TIPS_DIRECTORY).read()]
 
     # -- HELPER FUNCTIONS -- #
 
@@ -55,6 +48,13 @@ class MainCommands(commands.Cog):
             )
 
         return ret
+
+    def set_attrib_footer(self, embed: discord.Embed):
+        embed.set_footer(
+            text="Made by Anthemic | Icon by Creartive",
+            icon_url="https://i.imgur.com/JBNXE4g.png",
+        )
+        return embed
 
     def get_waiting_room_id_dict(self):
         return {
@@ -172,16 +172,13 @@ class MainCommands(commands.Cog):
 
             embed = discord.Embed(
                 title="Welcome to your Private Room!",
-                description="To see the list of commands, use pr!help."
+                description="To see the list of commands, use pr!help. "
                 "Please be reminded that server administrators "
                 "can still access your private channels!",
                 color=TEXT_COLOR,
             )
             embed.add_field(name="Tip", value=choice(self.tips))
-            embed.set_footer(
-                text="Made by Anthemic | Icon by Creartive",
-                icon_url="https://i.imgur.com/JBNXE4g.png",
-            )
+            embed = self.set_attrib_footer(embed)
 
             text = await self.get_room_channel(new_room, "text")
             await text.send(embed=embed)
@@ -324,8 +321,8 @@ class MainCommands(commands.Cog):
         private_text = await self.get_room_channel(room, "text")
         embed = discord.Embed(
             title="Private Room closing in 5 minutes",
-            description="To prevent it from closing, rejoin the private voice "
-            "channel. Use pr!close to immediately close it.",
+            description="To prevent it from closing, rejoin the private "
+            "voice channel. Use pr!close to immediately close it.",
             color=TEXT_COLOR,
         )
         warning_message = await private_text.send(
@@ -352,8 +349,8 @@ class MainCommands(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         """
-        Initializes databases and updates bot presence upon connecting to the
-        Discord API.
+        Initializes databases and updates bot presence upon
+        connecting to the Discord API.
         """
 
         logger.info(f"Successfully logged in as {self.bot.user}")
@@ -399,8 +396,7 @@ class MainCommands(commands.Cog):
         embed = discord.Embed(
             title="Privy's User Commands",
             description="I'm a Discord bot that adds privacy functions "
-            "to your server, "
-            "like private rooms and bulk deleting!",
+            "to your server, like private rooms and bulk deleting!",
             color=TEXT_COLOR,
         )
         embed.add_field(
@@ -423,14 +419,14 @@ class MainCommands(commands.Cog):
         )
         embed.add_field(
             name="pr!kick <ID> | pr!k",
-            value="Revokes access and kicks a user from your room. Ex. pr!k "
-            "Anthemic#6661",
+            value="Revokes access and kicks a user from your room. "
+            "Ex. pr!k Anthemic#6661",
             inline=True,
         )
         embed.add_field(
             name="pr!invite <ID> <msg> | pr!inv",
-            value="Grants access to a user. If a message is included, the bot "
-            "will send a DM to the user containing it. "
+            value="Grants access to a user. If a message is included, "
+            "the bot will send a DM to the user containing it. "
             "Ex. pr!inv Anthemic#6661 Come chill!",
             inline=False,
         )
@@ -439,10 +435,7 @@ class MainCommands(commands.Cog):
             value="Shows the admin commands",
             inline=False,
         )
-        embed.set_footer(
-            text="Made by Anthemic | Icon by Creartive",
-            icon_url="https://i.imgur.com/JBNXE4g.png",
-        )
+        embed = self.set_attrib_footer(embed)
         await ctx.send(embed=embed)
 
     @commands.command(name="ping")
@@ -543,9 +536,7 @@ class MainCommands(commands.Cog):
             )
 
             if args:
-                message = ""
-                for arg in args:
-                    message += arg + " "
+                message = " ".join(args)
 
                 embed = discord.Embed(
                     title="Invite sent",
@@ -658,7 +649,7 @@ class MainCommands(commands.Cog):
         embed.add_field(
             name="pr!setlobby | pr!sl",
             value="Sets the lobby channel to the voice channel you are "
-            "currently in. You can only have one lobby per server",
+            "currently in. You can only have one lobby per server.",
             inline=False,
         )
         embed.add_field(
@@ -688,10 +679,7 @@ class MainCommands(commands.Cog):
             value="Deletes the last x number of messages. Ex. pr!del 100",
             inline=True,
         )
-        embed.set_footer(
-            text="Made by Anthemic | Icon by Creartive",
-            icon_url="https://i.imgur.com/JBNXE4g.png",
-        )
+        embed = self.set_attrib_footer(embed)
         await ctx.send(embed=embed)
 
     @commands.command(name="forceclose", aliases=["fc"])
