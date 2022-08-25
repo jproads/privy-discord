@@ -11,6 +11,7 @@ from classes import DeleteProcess, PrivateRoom
 from constants import (
     DECISION_REACTS,
     NO_REACT,
+    PRIVY_DB,
     TEXT_COLOR,
     TIPS_DIRECTORY,
     YES_REACT,
@@ -21,10 +22,10 @@ from logger import logger
 class MainCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.room_db = SqliteDict("databases/room_db.sqlite")
-        self.preference_db = SqliteDict("databases/preference_db.sqlite")
-        self.delete_process_db = SqliteDict(
-            "databases/delete_process_queue.sqlite"
+        self.room_table = SqliteDict(PRIVY_DB, tablename="rooms")
+        self.preference_table = SqliteDict(PRIVY_DB, tablename="preferences")
+        self.delete_process_table = SqliteDict(
+            PRIVY_DB, tablename="delete_process_queue"
         )
 
         tips = list()
@@ -57,16 +58,18 @@ class MainCommands(commands.Cog):
 
     def get_waiting_room_id_dict(self):
         return {
-            int(room.waiting_room_id): room for room in self.room_db.values()
+            int(room.waiting_room_id): room
+            for room in self.room_table.values()
         }
 
     def get_private_voice_id_dict(self):
         return {
-            int(room.private_voice_id): room for room in self.room_db.values()
+            int(room.private_voice_id): room
+            for room in self.room_table.values()
         }
 
     def get_owner_ids(self):
-        return [int(key) for key in self.room_db.keys()]
+        return [int(key) for key in self.room_table.keys()]
 
     # -- ROOM HELPER FUNCTIONS -- #
 
@@ -80,16 +83,16 @@ class MainCommands(commands.Cog):
 
         logger.debug(f"Closed {room.owner_id}'s room")
 
-        self.room_db.pop(room.owner_id)
-        self.room_db.commit()
+        self.room_table.pop(room.owner_id)
+        self.room_table.commit()
 
     async def create_room(self, member: discord.Member):
         # TODO: Docstring
 
         # Checks for existing room
         # if yes, kicks them out of the channel and stops the function
-        if member.id in self.room_db.keys():
-            for room in self.room_db.values():
+        if member.id in self.room_table.keys():
+            for room in self.room_table.values():
                 if room.owner == member:
                     await member.send(
                         content=f"You already have a private room "
@@ -101,7 +104,7 @@ class MainCommands(commands.Cog):
 
         # TODO: make a function get_category_from_id
         # Searches for category object from category_id
-        category_id = self.preference_db.get(member.guild.id).get(
+        category_id = self.preference_table.get(member.guild.id).get(
             "lobby_category"
         )
         category = None
@@ -155,8 +158,8 @@ class MainCommands(commands.Cog):
                 )
             ).id
 
-            self.room_db[new_room.owner_id] = new_room
-            self.room_db.commit()
+            self.room_table[new_room.owner_id] = new_room
+            self.room_table.commit()
 
             logger.debug(
                 f"""Private voice: {
@@ -194,7 +197,7 @@ class MainCommands(commands.Cog):
 
         if (
             after.channel.id
-            == self.preference_db.get(member.guild.id).get("lobby_channel")
+            == self.preference_table.get(member.guild.id).get("lobby_channel")
             and member.id not in self.get_owner_ids()
         ):
             logger.debug(f"{member} joined lobby channel: {after.channel}")
@@ -202,7 +205,7 @@ class MainCommands(commands.Cog):
 
         elif (
             after.channel.id
-            == self.preference_db.get(member.guild.id).get("lobby_channel")
+            == self.preference_table.get(member.guild.id).get("lobby_channel")
             and member.id in self.get_owner_ids()
         ):
             await member.send(
@@ -457,7 +460,7 @@ class MainCommands(commands.Cog):
     @commands.command(name="close", aliases=["c"])
     async def close_room(self, ctx: commands.Context):
         try:
-            await self.delete_room(self.room_db[ctx.author.id])
+            await self.delete_room(self.room_table[ctx.author.id])
         except AttributeError:
             await ctx.send("You must own a room to use this!", delete_after=5)
         except KeyError:
@@ -472,7 +475,7 @@ class MainCommands(commands.Cog):
             return None
 
         try:
-            room = self.room_db[str(ctx.author.id)]
+            room = self.room_table[str(ctx.author.id)]
             private_voice = await self.get_room_channel(room, "voice")
             private_text = await self.get_room_channel(room, "text")
 
@@ -522,7 +525,7 @@ class MainCommands(commands.Cog):
             return None
 
         try:
-            room = self.room_db[ctx.author.id]
+            room = self.room_table[ctx.author.id]
             private_voice = await self.get_room_channel(room, "voice")
             private_text = await self.get_room_channel(room, "text")
 
@@ -585,7 +588,7 @@ class MainCommands(commands.Cog):
     async def show_lobby(self, ctx: commands.Context):
         flag = 0
 
-        for guild_id, prefs in self.preference_db.items():
+        for guild_id, prefs in self.preference_table.items():
             if guild_id == ctx.guild.id:
                 lobby_channel_id = prefs.get("lobby_channel")
                 for channel in ctx.guild.channels:
@@ -613,7 +616,7 @@ class MainCommands(commands.Cog):
     @commands.cooldown(rate=1, per=300, type=commands.BucketType.member)
     async def change_name(self, ctx: commands.Context, *, name):
         try:
-            room = self.room_db[ctx.author.id]
+            room = self.room_table[ctx.author.id]
             private_voice = await self.get_room_channel(room, "voice")
             private_text = await self.get_room_channel(room, "text")
             waiting_room = await self.get_room_channel(room, "waiting")
@@ -706,7 +709,7 @@ class MainCommands(commands.Cog):
             return None
 
         try:
-            room = self.room_db[owner_member.id]
+            room = self.room_table[owner_member.id]
             if room.guild_id == ctx.guild.id:
                 await self.delete_room(room)
                 logging.debug(
@@ -726,7 +729,7 @@ class MainCommands(commands.Cog):
     async def list_rooms(self, ctx: commands.Context):
         rooms_in_guild = {
             room.owner_id: room
-            for room in self.room_db.values()
+            for room in self.room_table.values()
             if room.guild_id == ctx.guild.id
         }
 
@@ -773,8 +776,8 @@ class MainCommands(commands.Cog):
     async def bulk_delete(self, ctx: commands.Context):
         new_process = DeleteProcess()
         new_process.doer_id = ctx.message.author.id
-        self.delete_process_db[new_process.doer_id] = new_process
-        self.delete_process_db.commit()
+        self.delete_process_table[new_process.doer_id] = new_process
+        self.delete_process_table.commit()
 
         embed = discord.Embed(
             title="Bulk deletion process",
@@ -809,7 +812,7 @@ class MainCommands(commands.Cog):
                 "reaction_add", check=check, timeout=120
             )
 
-            process = self.delete_process_db[doer_id]
+            process = self.delete_process_table[doer_id]
             if str(reaction.emoji) == YES_REACT:
                 async with ctx.message.channel.typing():
                     print(process.start_msg_id, process.end_msg_id)
@@ -863,8 +866,8 @@ class MainCommands(commands.Cog):
                         )
 
             elif str(reaction.emoji) == NO_REACT:
-                self.delete_process_db.pop(ctx.message.channel.id)
-                self.delete_process_db.commit()
+                self.delete_process_table.pop(ctx.message.channel.id)
+                self.delete_process_table.commit()
                 embed = discord.Embed(
                     title="Bulk delete failed",
                     description="Process timed out. Please retry.",
@@ -874,8 +877,8 @@ class MainCommands(commands.Cog):
                 await instruct.delete()
 
         except asyncio.TimeoutError:
-            self.delete_process_db.pop(ctx.message.channel.id)
-            self.delete_process_db.commit()
+            self.delete_process_table.pop(ctx.message.channel.id)
+            self.delete_process_table.commit()
             embed = discord.Embed(
                 title="Bulk delete failed",
                 description="Process timed out. Please retry.",
@@ -890,16 +893,16 @@ class MainCommands(commands.Cog):
         emoji = payload.emoji
         member = payload.member
 
-        for doer_id, process in self.delete_process_db.items():
+        for doer_id, process in self.delete_process_table.items():
             if member.id == int(doer_id):
                 if str(emoji) == "▶️":
                     process.start_msg_id = payload.message_id
-                    self.delete_process_db[doer_id] = process
-                    self.delete_process_db.commit()
+                    self.delete_process_table[doer_id] = process
+                    self.delete_process_table.commit()
                 elif str(emoji) == "⏹️":
                     process.end_msg_id = payload.message_id
-                    self.delete_process_db[doer_id] = process
-                    self.delete_process_db.commit()
+                    self.delete_process_table[doer_id] = process
+                    self.delete_process_table.commit()
 
 
 async def setup(bot):

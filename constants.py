@@ -7,4 +7,5 @@ YES_REACT = "✅"
 NO_REACT = "❌"
 DECISION_REACTS = set((YES_REACT, NO_REACT))
 
+PRIVY_DB = "databases/privy_db.sqlite"
 TIPS_DIRECTORY = "tips.txt"
