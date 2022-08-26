@@ -782,7 +782,7 @@ class MainCommands(commands.Cog):
         )
         instruct = await ctx.send(embed=embed)
         await instruct.add_reaction(YES_REACT)
-        await instruct.add_reaction()
+        await instruct.add_reaction(NO_REACT)
         await self.perform_delete_process(ctx, instruct, new_process.doer_id)
 
     async def perform_delete_process(
