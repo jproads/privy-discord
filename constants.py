@@ -9,3 +9,6 @@ DECISION_REACTS = set((YES_REACT, NO_REACT))
 
 PRIVY_DB = "databases/privy_db.sqlite"
 TIPS_DIRECTORY = "tips.txt"
+
+HISTORY_LIMIT = 1000
+DELETE_DELAY = 0.5
