@@ -3,6 +3,7 @@ import logging
 import time
 from random import choice
 
+from datetime import timedelta
 import discord
 from discord.ext import commands
 from sqlitedict import SqliteDict
@@ -15,9 +16,10 @@ from constants import (
     TEXT_COLOR,
     TIPS_DIRECTORY,
     YES_REACT,
+    HISTORY_LIMIT,
+    DELETE_DELAY,
 )
 from logger import logger
-
 
 class MainCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -746,16 +748,18 @@ class MainCommands(commands.Cog):
 
     @commands.command(name="deletelast", aliases=["del"])
     @commands.has_permissions(manage_messages=True)
-    async def deleteLast(self, ctx: commands.Context, limit):
-        msgs = await ctx.message.channel.history(limit=int(limit)).flatten()
+    async def delete_last(self, ctx: commands.Context, limit):
+        msgs = ctx.message.channel.history(limit=int(limit))
+        count = 0
         async with ctx.message.channel.typing():
-            for msg in msgs:
+            async for msg in msgs:
                 await msg.delete()
                 await asyncio.sleep(0.5)
+
             embed = discord.Embed(
                 title="Deletion successful",
-                description=f"Deleted {len(msgs)} messages.",
-                color=TEXT_COLOR,
+                description=f"Deleted {i + 1} messages.",
+                color=TEXT_COLOR
             )
             await ctx.send(embed=embed, delete_after=5)
 
@@ -803,9 +807,7 @@ class MainCommands(commands.Cog):
             process = self.delete_process_table[doer_id]
             if str(reaction.emoji) == YES_REACT:
                 async with ctx.message.channel.typing():
-                    print(process.start_msg_id, process.end_msg_id)
                     if process.start_msg_id and process.end_msg_id:
-
                         start_msg = await ctx.message.channel.fetch_message(
                             process.start_msg_id
                         )
@@ -813,22 +815,34 @@ class MainCommands(commands.Cog):
                             process.end_msg_id
                         )
 
-                        msgs = await ctx.message.channel.history(
-                            limit=250
-                        ).flatten()
+                        # Before and After are non-inclusive, thus 1 second is added to include start and stop
+                        msgs_generator = ctx.message.channel.history(
+                            limit=HISTORY_LIMIT, before=end_msg.created_at + timedelta(seconds=1),
+                            after=start_msg.created_at - timedelta(seconds=1), oldest_first=True
+                        )
 
-                        start_msg_ind = msgs.index(start_msg)
-                        end_msg_ind = msgs.index(end_msg)
+                        print(msgs_generator)
 
-                        for i in range(end_msg_ind, start_msg_ind + 1):
-                            await msgs[i].delete()
-                            await asyncio.sleep(0.5)
+                        is_deleting = False
+                        count = 0
+                        async for msg in msgs_generator:
+                            print(msg.id, process.start_msg_id, msg.id == process.start_msg_id)
+                            if msg.id == process.start_msg_id:
+                                is_deleting = True
+                            elif msg.id == process.end_msg_id:
+                                count += 1
+                                await msg.delete()
+                                break
+
+                            if is_deleting:
+                                count += 1
+                                await msg.delete()
+                                await asyncio.sleep(DELETE_DELAY)
 
                         embed = discord.Embed(
                             title="Bulk delete successful",
                             description="Successfully deleted "
-                            f"{start_msg_ind - end_msg_ind + 1} "
-                            "messages.",
+                            f"{count} messages.",
                             color=TEXT_COLOR,
                         )
                         await ctx.send(embed=embed, delete_after=5)
@@ -885,6 +899,7 @@ class MainCommands(commands.Cog):
             if member.id == int(doer_id):
                 if str(emoji) == "▶️":
                     process.start_msg_id = payload.message_id
+
                     self.delete_process_table[doer_id] = process
                     self.delete_process_table.commit()
                 elif str(emoji) == "⏹️":
