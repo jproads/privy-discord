@@ -3,6 +3,7 @@ import logging
 import time
 from random import choice
 
+from datetime import timedelta
 import discord
 from discord.ext import commands
 from sqlitedict import SqliteDict
@@ -814,17 +815,22 @@ class MainCommands(commands.Cog):
                             process.end_msg_id
                         )
 
-                        msgs_generator = await ctx.message.channel.history(
-                            limit=HISTORY_LIMIT, before=end_msg.created_at,
-                            after=start_msg.created_at
+                        # Before and After are non-inclusive, thus 1 second is added to include start and stop
+                        msgs_generator = ctx.message.channel.history(
+                            limit=HISTORY_LIMIT, before=end_msg.created_at + timedelta(seconds=1),
+                            after=start_msg.created_at - timedelta(seconds=1), oldest_first=True
                         )
+
+                        print(msgs_generator)
 
                         is_deleting = False
                         count = 0
                         async for msg in msgs_generator:
-                            if msg == start_msg:
+                            print(msg.id, process.start_msg_id, msg.id == process.start_msg_id)
+                            if msg.id == process.start_msg_id:
                                 is_deleting = True
-                            elif msg == end_msg:
+                            elif msg.id == process.end_msg_id:
+                                count += 1
                                 await msg.delete()
                                 break
 
