@@ -28,7 +28,7 @@ class MainCommands(commands.Cog):
             PRIVY_DB, tablename="delete_process_queue"
         )
 
-        self.tips = [line.strip() for line in open(TIPS_DIRECTORY).read()]
+        self.tips = [line.strip() for line in open(TIPS_DIRECTORY).readlines()]
 
     # -- HELPER FUNCTIONS -- #
 
