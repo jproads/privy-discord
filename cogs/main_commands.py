@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import time
+from datetime import timedelta
 from random import choice
 
-from datetime import timedelta
 import discord
 from discord.ext import commands
 from sqlitedict import SqliteDict
@@ -11,15 +11,16 @@ from sqlitedict import SqliteDict
 from classes import DeleteProcess, PrivateRoom
 from constants import (
     DECISION_REACTS,
+    DELETE_DELAY,
+    HISTORY_LIMIT,
     NO_REACT,
     PRIVY_DB,
     TEXT_COLOR,
     TIPS_DIRECTORY,
     YES_REACT,
-    HISTORY_LIMIT,
-    DELETE_DELAY,
 )
 from logger import logger
+
 
 class MainCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -750,7 +751,6 @@ class MainCommands(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def delete_last(self, ctx: commands.Context, limit):
         msgs = ctx.message.channel.history(limit=int(limit))
-        count = 0
         async with ctx.message.channel.typing():
             async for msg in msgs:
                 await msg.delete()
@@ -758,8 +758,8 @@ class MainCommands(commands.Cog):
 
             embed = discord.Embed(
                 title="Deletion successful",
-                description=f"Deleted {i + 1} messages.",
-                color=TEXT_COLOR
+                description=f"Deleted {limit} messages.",
+                color=TEXT_COLOR,
             )
             await ctx.send(embed=embed, delete_after=5)
 
@@ -815,10 +815,13 @@ class MainCommands(commands.Cog):
                             process.end_msg_id
                         )
 
-                        # Before and After are non-inclusive, thus 1 second is added to include start and stop
+                        # Before and After are non-inclusive, thus 1 second
+                        # is added to include start and stop
                         msgs_generator = ctx.message.channel.history(
-                            limit=HISTORY_LIMIT, before=end_msg.created_at + timedelta(seconds=1),
-                            after=start_msg.created_at - timedelta(seconds=1), oldest_first=True
+                            limit=HISTORY_LIMIT,
+                            before=end_msg.created_at + timedelta(seconds=1),
+                            after=start_msg.created_at - timedelta(seconds=1),
+                            oldest_first=True,
                         )
 
                         print(msgs_generator)
@@ -826,7 +829,11 @@ class MainCommands(commands.Cog):
                         is_deleting = False
                         count = 0
                         async for msg in msgs_generator:
-                            print(msg.id, process.start_msg_id, msg.id == process.start_msg_id)
+                            print(
+                                msg.id,
+                                process.start_msg_id,
+                                msg.id == process.start_msg_id,
+                            )
                             if msg.id == process.start_msg_id:
                                 is_deleting = True
                             elif msg.id == process.end_msg_id:
